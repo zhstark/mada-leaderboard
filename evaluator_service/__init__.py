@@ -1,0 +1,2 @@
+"""MADA competition evaluator service."""
+

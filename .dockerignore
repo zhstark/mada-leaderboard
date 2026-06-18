@@ -1,0 +1,15 @@
+.DS_Store
+**/.DS_Store
+.env
+.git/
+.gitignore
+.pytest_cache/
+.venv/
+venv/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*.egg-info/
+tests/
+var/
+q2/labels.zip
