@@ -26,11 +26,22 @@ async def run_scoring_job(
         result = await asyncio.to_thread(_score, topic_id, prediction_dir)
         await repository.mark_succeeded(submission_id, result.score, result.metrics)
     except Exception as exc:  # noqa: BLE001 - background task must persist any failure state.
-        logger.exception("Scoring job failed for submission %s", submission_id)
+        logger.exception(
+            "Scoring job failed submission_id=%s topic_id=%s prediction_dir=%s",
+            submission_id,
+            topic_id,
+            prediction_dir,
+        )
         try:
             await repository.mark_failed(submission_id, str(exc))
         except Exception:  # noqa: BLE001 - original scoring exception is already logged.
-            logger.exception("Failed to persist scoring failure for submission %s", submission_id)
+            logger.exception(
+                "Failed to persist scoring failure submission_id=%s topic_id=%s prediction_dir=%s scoring_error=%s",
+                submission_id,
+                topic_id,
+                prediction_dir,
+                exc,
+            )
 
 
 def _score(topic_id: int, prediction_dir: Path):
