@@ -22,6 +22,7 @@ WORKDIR /app
 
 COPY --chown=appuser:appuser pyproject.toml README.md ./
 COPY --chown=appuser:appuser evaluator_service ./evaluator_service
+COPY --chown=appuser:appuser scripts ./scripts
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir .

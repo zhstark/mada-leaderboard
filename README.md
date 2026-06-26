@@ -57,9 +57,9 @@ Content-Type: application/json
 
 ## 指标
 
-- q1: 计算 `mAP50` 和 `mAP50_90`，`score = 0.5 * mAP50 + 0.5 * mAP50_90`。
-- q2: 计算 `mAP50_90`，`score = mAP50_90`。
-- `mAP50_90` 使用 IoU 阈值 `0.50, 0.55, ..., 0.90`。
+- q1: 计算 `mAP50` 和 `mAP50_95`，`score = 0.5 * mAP50 + 0.5 * mAP50_95`。
+- q2: 计算 `mAP50_95`，`score = mAP50_95`。
+- `mAP50_95` 使用 IoU 阈值 `0.50, 0.55, ..., 0.95`。
 - AP 计算使用 `ultralytics.utils.metrics.ap_per_class`，IoU 计算使用 `ultralytics.utils.metrics.box_iou`。
 
 评分完成后按 `submission_id` 更新 `public.competition_prediction_submissions`：
@@ -85,6 +85,24 @@ where id = $submission_id;
 - `EVALUATOR_MAX_ZIP_MEMBERS`: zip 最大成员数，默认 20000。
 - `EVALUATOR_DOWNLOAD_TIMEOUT_SECONDS`: 下载超时，默认 120 秒。
 - `EVALUATOR_RETAIN_WORK_DIR`: 是否保留任务目录，默认保留。
+
+## 历史指标重算
+
+如果之前已经按 `mAP50_90` 评分，且 `EVALUATOR_WORK_DIR` 中仍保留历史任务目录，可以用脚本按新的 `mAP50_95` 重新计算并更新数据库。
+
+先 dry-run 检查会重算哪些提交：
+
+```bash
+python3 scripts/recompute_map50_95.py
+```
+
+确认无误后写回 `score`、`metrics` 和 `evaluated_at`：
+
+```bash
+python3 scripts/recompute_map50_95.py --apply
+```
+
+脚本默认只处理 `metrics` 中仍包含 `mAP50_90` 的 `succeeded` 提交，并通过 `evaluator_job_id` 查找 `EVALUATOR_WORK_DIR/<job_id>/extracted` 或同目录下保留的 zip。若生产库里的赛题字段不是 `topic_id`，可用 `--topic-column <列名>` 指定。
 
 ## Docker 部署
 

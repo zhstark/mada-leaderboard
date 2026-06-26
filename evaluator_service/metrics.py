@@ -10,7 +10,7 @@ from ultralytics.utils.metrics import ap_per_class, box_iou
 from .labels import Box
 
 
-MAP_50_90_THRESHOLDS = tuple(round(value / 100, 2) for value in range(50, 91, 5))
+MAP_50_95_THRESHOLDS = tuple(round(value / 100, 2) for value in range(50, 96, 5))
 
 
 @dataclass(frozen=True)
@@ -20,19 +20,19 @@ class EvaluationResult:
 
 
 def evaluate_detection(ground_truth: list[Box], predictions: list[Box], topic_id: int) -> EvaluationResult:
-    map50, map50_90 = ultralytics_map(ground_truth, predictions, MAP_50_90_THRESHOLDS)
+    map50, map50_95 = ultralytics_map(ground_truth, predictions, MAP_50_95_THRESHOLDS)
 
     if topic_id == 1:
-        score = 0.5 * map50 + 0.5 * map50_90
+        score = 0.5 * map50 + 0.5 * map50_95
         metrics = {
             "mAP50": round(map50, 6),
-            "mAP50_90": round(map50_90, 6),
+            "mAP50_95": round(map50_95, 6),
             "score": round(score, 6),
         }
     elif topic_id == 2:
-        score = map50_90
+        score = map50_95
         metrics = {
-            "mAP50_90": round(map50_90, 6),
+            "mAP50_95": round(map50_95, 6),
             "score": round(score, 6),
         }
     else:
@@ -66,8 +66,8 @@ def ultralytics_map(
         return 0.0, 0.0
 
     map50 = float(ap[:, 0].mean())
-    map50_90 = float(ap.mean())
-    return map50, map50_90
+    map50_95 = float(ap.mean())
+    return map50, map50_95
 
 
 @dataclass(frozen=True)
