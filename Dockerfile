@@ -6,7 +6,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PORT=8000 \
     EVALUATOR_WORK_DIR=/data/evaluator_jobs \
     MPLCONFIGDIR=/tmp/matplotlib \
-    ULTRALYTICS_CONFIG_DIR=/tmp/ultralytics
+    ULTRALYTICS_CONFIG_DIR=/tmp/ultralytics \
+    PIP_INDEX_URL=https://pypi.tuna.tsinghua.edu.cn/simple \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
