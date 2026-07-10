@@ -31,6 +31,8 @@ RUN pip install --no-cache-dir --upgrade pip \
 
 COPY --chown=appuser:appuser q1 ./q1
 COPY --chown=appuser:appuser q2 ./q2
+COPY --chown=appuser:appuser q1_test ./q1_test
+COPY --chown=appuser:appuser q2_test ./q2_test
 
 RUN mkdir -p /data/evaluator_jobs /tmp/matplotlib /tmp/ultralytics \
     && chown -R appuser:appuser /data /tmp/matplotlib /tmp/ultralytics
