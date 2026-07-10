@@ -11,13 +11,15 @@ logger = logging.getLogger(__name__)
 
 
 class SubmissionRepository:
+    table_name = "public.competition_prediction_submissions"
+
     def __init__(self, database_url: str | None):
         self.database_url = normalize_database_url(database_url)
 
     async def mark_queued(self, submission_id: UUID, job_id: str) -> None:
         await self._execute(
-            """
-            update public.competition_prediction_submissions
+            f"""
+            update {self.table_name}
             set status = 'queued',
                 evaluator_job_id = %s,
                 validation_error = null
@@ -28,8 +30,8 @@ class SubmissionRepository:
 
     async def mark_scoring(self, submission_id: UUID) -> None:
         await self._execute(
-            """
-            update public.competition_prediction_submissions
+            f"""
+            update {self.table_name}
             set status = 'scoring',
                 validation_error = null
             where id = %s
@@ -39,8 +41,8 @@ class SubmissionRepository:
 
     async def mark_succeeded(self, submission_id: UUID, score: float, metrics: dict[str, float]) -> None:
         await self._execute(
-            """
-            update public.competition_prediction_submissions
+            f"""
+            update {self.table_name}
             set status = 'succeeded',
                 score = %s,
                 metrics = %s::jsonb,
@@ -53,8 +55,8 @@ class SubmissionRepository:
 
     async def mark_failed(self, submission_id: UUID, error: str) -> None:
         await self._execute(
-            """
-            update public.competition_prediction_submissions
+            f"""
+            update {self.table_name}
             set status = 'failed',
                 validation_error = %s,
                 evaluated_at = now()
@@ -71,6 +73,10 @@ class SubmissionRepository:
         async with await psycopg.AsyncConnection.connect(self.database_url) as connection:
             async with connection.cursor() as cursor:
                 await cursor.execute(sql, params)
+
+
+class TestSubmissionRepository(SubmissionRepository):
+    table_name = "public.competition_test_prediction_submissions"
 
 
 def normalize_database_url(database_url: str | None) -> str | None:

@@ -106,7 +106,7 @@ python3 scripts/recompute_map50_95.py --apply
 
 ## Docker 部署
 
-镜像会包含服务代码和本地 `q1` / `q2` ground truth labels。`.env` 不会被打包进镜像，`compose.yaml` 会在启动容器时注入 `.env`。
+镜像会包含服务代码和本地 `q1` / `q2` / `q1_test` / `q2_test` ground truth labels。`.env` 不会被打包进镜像，`compose.yaml` 会在启动容器时注入 `.env`。
 
 构建并启动：
 
@@ -125,6 +125,27 @@ docker compose logs -f evaluator
 ```text
 http://localhost:8000/submissions
 ```
+
+测试集评分接口：
+
+```http
+POST /test-submissions
+Content-Type: application/json
+```
+
+```json
+{
+  "submission_id": "uuid-of-competition-test-prediction-submission",
+  "topic_id": 1,
+  "file_name": "prediction.zip",
+  "file_size": 12345678,
+  "download_url": "https://example.com/presigned-download-url"
+}
+```
+
+- `topic_id=1` 使用 `q1_test/labels` 作为真值，计算 `mAP50`、`mAP50_95` 和 `score`。
+- `topic_id=2` 使用 `q2_test/labels` 作为真值，计算 `mAP50_95` 和 `score`。
+- 这个接口和 `/submissions` 一样，通过同步校验后返回 `accepted`、`job_id` 和 `message`，后台评分完成后写入 `public.competition_test_prediction_submissions` 的 `status`、`score`、`metrics`、`evaluator_job_id`、`evaluated_at` 和 `validation_error`。
 
 健康检查：
 
