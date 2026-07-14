@@ -7,9 +7,11 @@ from typing import Callable
 from uuid import UUID
 
 from .config import ground_truth_dir_for_topic, test_ground_truth_dir_for_topic
+from .counting import load_count_evaluation_data
 from .database import SubmissionRepository
 from .labels import load_ground_truth, load_predictions, validate_prediction_files
-from .metrics import evaluate_detection
+from .metrics import evaluate_counting, evaluate_detection, evaluate_quality
+from .quality import load_quality_evaluation_data
 
 
 logger = logging.getLogger(__name__)
@@ -84,6 +86,13 @@ def _score(
     ground_truth_dir_resolver: Callable[[int], Path] = ground_truth_dir_for_topic,
 ):
     ground_truth_dir = ground_truth_dir_resolver(topic_id)
+    if topic_id == 3:
+        ground_truth, predictions = load_quality_evaluation_data(prediction_dir, ground_truth_dir)
+        return evaluate_quality(ground_truth, predictions)
+    if topic_id == 4:
+        ground_truth, predictions = load_count_evaluation_data(prediction_dir, ground_truth_dir)
+        return evaluate_counting(ground_truth, predictions)
+
     prediction_files = validate_prediction_files(prediction_dir, ground_truth_dir)
     ground_truth = load_ground_truth(ground_truth_dir)
     predictions = load_predictions(prediction_files)
