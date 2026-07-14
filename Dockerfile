@@ -33,6 +33,10 @@ COPY --chown=appuser:appuser q1 ./q1
 COPY --chown=appuser:appuser q2 ./q2
 COPY --chown=appuser:appuser q1_test ./q1_test
 COPY --chown=appuser:appuser q2_test ./q2_test
+COPY --chown=appuser:appuser q3 ./q3
+COPY --chown=appuser:appuser q3_test ./q3_test
+COPY --chown=appuser:appuser q4 ./q4
+COPY --chown=appuser:appuser q4_test ./q4_test
 
 RUN mkdir -p /data/evaluator_jobs /tmp/matplotlib /tmp/ultralytics \
     && chown -R appuser:appuser /data /tmp/matplotlib /tmp/ultralytics

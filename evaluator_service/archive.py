@@ -15,6 +15,45 @@ logger = logging.getLogger(__name__)
 
 
 async def download_zip(download_url: str, target_path: Path, expected_size: int, settings: Settings) -> None:
+    await _download_file(download_url, target_path, expected_size, settings)
+    if not zipfile.is_zipfile(target_path):
+        logger.warning(
+            "Prediction file is not a valid zip url=%s target_path=%s expected_size=%s",
+            download_url,
+            target_path,
+            expected_size,
+        )
+        raise FormatValidationError("提交文件不是有效的 zip 压缩包")
+
+
+async def download_xlsx(download_url: str, target_path: Path, expected_size: int, settings: Settings) -> None:
+    await _download_file(download_url, target_path, expected_size, settings)
+    if not zipfile.is_zipfile(target_path):
+        raise FormatValidationError("提交文件不是有效的 xlsx 文件")
+    try:
+        with zipfile.ZipFile(target_path) as workbook:
+            members = workbook.infolist()
+            if len(members) > settings.max_zip_members:
+                raise FormatValidationError("xlsx 内文件数量超过服务允许的最大数量")
+            if sum(member.file_size for member in members) > settings.max_uncompressed_bytes:
+                raise FormatValidationError("xlsx 解压后体积超过服务允许的最大大小")
+            names = {member.filename for member in members}
+    except zipfile.BadZipFile as exc:
+        raise FormatValidationError("提交文件不是有效的 xlsx 文件") from exc
+    if "[Content_Types].xml" not in names or "xl/workbook.xml" not in names:
+        raise FormatValidationError("提交文件不是有效的 xlsx 文件")
+
+
+async def download_txt(download_url: str, target_path: Path, expected_size: int, settings: Settings) -> None:
+    await _download_file(download_url, target_path, expected_size, settings)
+
+
+async def _download_file(
+    download_url: str,
+    target_path: Path,
+    expected_size: int,
+    settings: Settings,
+) -> None:
     target_path.parent.mkdir(parents=True, exist_ok=True)
     timeout = httpx.Timeout(settings.download_timeout_seconds)
     bytes_written = 0
@@ -43,7 +82,7 @@ async def download_zip(download_url: str, target_path: Path, expected_size: int,
                         target_path,
                         expected_size,
                     )
-                    raise FormatValidationError("预测 zip 文件超过服务允许的最大大小")
+                    raise FormatValidationError("预测文件超过服务允许的最大大小")
 
                 with target_path.open("wb") as output:
                     async for chunk in response.aiter_bytes():
@@ -58,7 +97,7 @@ async def download_zip(download_url: str, target_path: Path, expected_size: int,
                                 target_path,
                                 expected_size,
                             )
-                            raise FormatValidationError("预测 zip 文件超过服务允许的最大大小")
+                            raise FormatValidationError("预测文件超过服务允许的最大大小")
                         output.write(chunk)
         except httpx.HTTPError as exc:
             logger.warning(
@@ -81,15 +120,6 @@ async def download_zip(download_url: str, target_path: Path, expected_size: int,
             bytes_written,
         )
         raise FormatValidationError(f"下载文件大小不一致: 期望 {expected_size} 字节，实际 {bytes_written} 字节")
-    if not zipfile.is_zipfile(target_path):
-        logger.warning(
-            "Prediction file is not a valid zip url=%s target_path=%s expected_size=%s bytes_written=%s",
-            download_url,
-            target_path,
-            expected_size,
-            bytes_written,
-        )
-        raise FormatValidationError("提交文件不是有效的 zip 压缩包")
 
 
 def extract_zip_safely(zip_path: Path, destination: Path, settings: Settings) -> Path:

@@ -120,3 +120,47 @@ def test_submission_validation_success_logs_each_process_stage(monkeypatch, tmp_
     assert "file_name=prediction.zip" in caplog.text
     assert "file_size=54321" in caplog.text
     assert "download_url=https://example.com/prediction.zip?token=def" in caplog.text
+
+
+def test_q3_validation_submission_accepts_single_xlsx(monkeypatch, tmp_path):
+    prediction_path = tmp_path / "job-id" / "prediction.xlsx"
+    ground_truth_path = tmp_path / "q3" / "val_result.xlsx"
+    scheduled_jobs = []
+
+    async def download_xlsx(download_url, target_path, expected_size, settings):
+        assert target_path == prediction_path
+
+    def validate_quality_submission(prediction_path_arg, ground_truth_path_arg):
+        assert prediction_path_arg == prediction_path
+        assert ground_truth_path_arg == ground_truth_path
+
+    async def run_scoring_job(**kwargs):
+        scheduled_jobs.append(kwargs)
+
+    monkeypatch.setattr(main_module, "uuid4", lambda: "job-id")
+    monkeypatch.setenv("EVALUATOR_WORK_DIR", str(tmp_path))
+    monkeypatch.setenv("EVALUATOR_RETAIN_WORK_DIR", "1")
+    monkeypatch.setattr(main_module, "download_xlsx", download_xlsx)
+    monkeypatch.setattr(main_module, "validate_quality_submission", validate_quality_submission)
+    monkeypatch.setattr(main_module, "ground_truth_dir_for_topic", lambda topic_id: ground_truth_path)
+    monkeypatch.setattr(main_module, "SubmissionRepository", FakeSubmissionRepository)
+    monkeypatch.setattr(main_module, "run_scoring_job", run_scoring_job)
+
+    background_tasks = BackgroundTasks()
+    response = asyncio.run(
+        main_module.create_submission(
+            EvaluateRequest(
+                submission_id="77777777-7777-7777-7777-777777777777",
+                topic_id=3,
+                file_name="prediction.xlsx",
+                file_size=123,
+                download_url="https://example.com/prediction.xlsx",
+            ),
+            background_tasks,
+        )
+    )
+    asyncio.run(background_tasks())
+
+    assert response.accepted is True
+    assert scheduled_jobs[0]["topic_id"] == 3
+    assert scheduled_jobs[0]["prediction_dir"] == prediction_path

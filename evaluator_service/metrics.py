@@ -7,7 +7,9 @@ import numpy as np
 import torch
 from ultralytics.utils.metrics import ap_per_class, box_iou
 
+from .counting import CountMeasurement
 from .labels import Box
+from .quality import QualityMeasurement
 
 
 MAP_50_95_THRESHOLDS = tuple(round(value / 100, 2) for value in range(50, 96, 5))
@@ -17,6 +19,49 @@ MAP_50_95_THRESHOLDS = tuple(round(value / 100, 2) for value in range(50, 96, 5)
 class EvaluationResult:
     metrics: dict[str, float]
     score: float
+
+
+def evaluate_counting(
+    ground_truth: dict[str, CountMeasurement],
+    predictions: dict[str, CountMeasurement],
+) -> EvaluationResult:
+    mse = sum(
+        (predictions[image_id].count - truth.count) ** 2
+        for image_id, truth in ground_truth.items()
+    ) / len(ground_truth)
+    rounded_mse = round(mse, 6)
+    return EvaluationResult(
+        metrics={"mse": rounded_mse, "score": rounded_mse},
+        score=rounded_mse,
+    )
+
+
+def evaluate_quality(
+    ground_truth: dict[int, QualityMeasurement],
+    predictions: dict[int, QualityMeasurement],
+) -> EvaluationResult:
+    sugar_denominator = sum(item.sugar for item in ground_truth.values())
+    acid_denominator = sum(item.acid for item in ground_truth.values())
+    if sugar_denominator <= 0 or acid_denominator <= 0:
+        raise ValueError("q3 ground truth 糖度和酸度总和必须大于 0")
+
+    sugar_error = sum(
+        abs(predictions[sample_id].sugar - truth.sugar)
+        for sample_id, truth in ground_truth.items()
+    ) / sugar_denominator
+    acid_error = sum(
+        abs(predictions[sample_id].acid - truth.acid)
+        for sample_id, truth in ground_truth.items()
+    ) / acid_denominator
+    error = 0.5 * sugar_error + 0.5 * acid_error
+    rounded_error = round(error, 6)
+    metrics = {
+        "sugar_error": round(sugar_error, 6),
+        "acid_error": round(acid_error, 6),
+        "error": rounded_error,
+        "score": rounded_error,
+    }
+    return EvaluationResult(metrics=metrics, score=rounded_error)
 
 
 def evaluate_detection(ground_truth: list[Box], predictions: list[Box], topic_id: int) -> EvaluationResult:

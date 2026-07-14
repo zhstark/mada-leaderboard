@@ -42,6 +42,10 @@ def ground_truth_dir_for_topic(topic_id: int) -> Path:
         return PROJECT_ROOT / "q1" / "labels"
     if topic_id == 2:
         return PROJECT_ROOT / "q2" / "labels"
+    if topic_id == 3:
+        return PROJECT_ROOT / "q3" / "val_result.xlsx"
+    if topic_id == 4:
+        return PROJECT_ROOT / "q4" / "val.txt"
     raise ValueError(f"Unsupported topic_id: {topic_id}")
 
 
@@ -50,4 +54,8 @@ def test_ground_truth_dir_for_topic(topic_id: int) -> Path:
         return PROJECT_ROOT / "q1_test" / "labels"
     if topic_id == 2:
         return PROJECT_ROOT / "q2_test" / "labels"
+    if topic_id == 3:
+        return PROJECT_ROOT / "q3_test" / "test_result.xlsx"
+    if topic_id == 4:
+        return PROJECT_ROOT / "q4_test" / "test.txt"
     raise ValueError(f"Unsupported topic_id: {topic_id}")
